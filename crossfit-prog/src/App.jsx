@@ -485,7 +485,7 @@ export default function App() {
                 {sortedIdxs.map(i => {
                   const dk=DK[i], dt=new Date(monday.getTime()+i*86400000)
                   const isToday=dt.toDateString()===today.toDateString()
-                  const d=wdata.days[dk]||{focus:'',isRest:false,blocks:[]}
+                  const d=wdata.days[dk]||{focus:'',isRest:false,blocks:[]} 
                   return (
                     <DayCard key={dk} dayKey={dk} label={DL[i]} date={fmtDate(dt)} dateObj={dt}
                       data={d} isAdmin={isAdmin} isToday={isToday} isMobile={isMobile} defaultOpen={isToday}
