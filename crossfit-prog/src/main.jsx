@@ -5,6 +5,16 @@ import { inject } from '@vercel/analytics'
 
 inject()
 
+// Google Analytics
+const script = document.createElement('script')
+script.async = true
+script.src = 'https://www.googletagmanager.com/gtag/js?id=G-NDRQC089XT'
+document.head.appendChild(script)
+window.dataLayer = window.dataLayer || []
+function gtag(){window.dataLayer.push(arguments)}
+gtag('js', new Date())
+gtag('config', 'G-NDRQC089XT')
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />
