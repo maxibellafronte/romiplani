@@ -1,50 +1,26 @@
-// Service Worker para PLANI RF
-// Permite que la app funcione offline una vez instalada
+// Service Worker de desinstalacion (kill switch)
+//
+// La version anterior de este archivo cacheaba "/" con estrategia cache-first
+// y un CACHE_NAME fijo, por lo que los navegadores que lo tenian instalado
+// seguian sirviendo el index.html viejo (y su bundle viejo) para siempre.
+// index.html ya no registra ningun service worker, pero los que ya estaban
+// instalados no se van solos: este archivo los reemplaza, borra todos los
+// caches, se desregistra y recarga las pestanas abiertas.
 
-const CACHE_NAME = "plani-cache-v1";
-const ASSETS_TO_CACHE = [
-  "/",
-  "/manifest.json",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png",
-  "/icons/apple-touch-icon.png"
-];
-
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
-  );
+self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) return caches.delete(key);
-        })
-      )
-    )
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((key) => caches.delete(key)));
+      await self.registration.unregister();
+      const clients = await self.clients.matchAll({ type: "window" });
+      clients.forEach((client) => client.navigate(client.url));
+    })()
   );
-  self.clients.claim();
 });
 
-self.addEventListener("fetch", (event) => {
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return (
-        cached ||
-        fetch(event.request)
-          .then((response) => {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseClone);
-            });
-            return response;
-          })
-          .catch(() => cached)
-      );
-    })
-  );
-});
+// Sin handler de fetch: todo va directo a la red.
