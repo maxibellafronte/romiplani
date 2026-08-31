@@ -286,6 +286,7 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [editMode, setEditMode] = useState(false)
+  const [cambiandoPass, setCambiandoPass] = useState(false)
   const [addDay, setAddDay] = useState(null)
   const [editBlk, setEditBlk] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -396,6 +397,10 @@ export default function App() {
   if (profile?.must_change_password) return (
     <CambiarPassword nombre={profile?.full_name} onListo={()=>loadProfile(session.user.id)} />
   )
+  if (cambiandoPass) return (
+    <CambiarPassword obligatorio={false}
+      onListo={()=>setCambiandoPass(false)} onCancelar={()=>setCambiandoPass(false)} />
+  )
   if (profile?.status === 'pending') return <PendingScreen profile={profile} />
   if (profile?.status === 'inactive') return (
     <div style={{minHeight:'100vh',background:'#DCE3E8',display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
@@ -471,13 +476,19 @@ export default function App() {
         <span style={{fontSize:11,color:'#AEB9C0'}}>
           {isAdmin ? '⚡ Modo Coach' : userName}
         </span>
-        {isAdmin && (
-          <div style={{display:'flex',gap:6}}>
-            <button onClick={()=>setAdminTab('programming')} style={{padding:'4px 12px',fontSize:11,fontWeight:600,cursor:'pointer',borderRadius:6,background:adminTab==='programming'?'#31708E22':'none',border:`1px solid ${adminTab==='programming'?'#31708E':'#C4CDD4'}`,color:adminTab==='programming'?'#31708E':'#AEB9C0'}}>📅 Programación</button>
-            <button onClick={()=>setAdminTab('athletes')} style={{padding:'4px 12px',fontSize:11,fontWeight:600,cursor:'pointer',borderRadius:6,background:adminTab==='athletes'?'#31708E22':'none',border:`1px solid ${adminTab==='athletes'?'#31708E':'#C4CDD4'}`,color:adminTab==='athletes'?'#31708E':'#AEB9C0'}}>👥 Atletas</button>
-            <button onClick={()=>setAdminTab('activity')} style={{padding:'4px 12px',fontSize:11,fontWeight:600,cursor:'pointer',borderRadius:6,background:adminTab==='activity'?'#31708E22':'none',border:`1px solid ${adminTab==='activity'?'#31708E':'#C4CDD4'}`,color:adminTab==='activity'?'#31708E':'#AEB9C0'}}>📊 Actividad</button>
-          </div>
-        )}
+        <div style={{display:'flex',gap:6,alignItems:'center'}}>
+          {isAdmin && (
+            <>
+              <button onClick={()=>setAdminTab('programming')} style={{padding:'4px 12px',fontSize:11,fontWeight:600,cursor:'pointer',borderRadius:6,background:adminTab==='programming'?'#31708E22':'none',border:`1px solid ${adminTab==='programming'?'#31708E':'#C4CDD4'}`,color:adminTab==='programming'?'#31708E':'#AEB9C0'}}>📅 Programación</button>
+              <button onClick={()=>setAdminTab('athletes')} style={{padding:'4px 12px',fontSize:11,fontWeight:600,cursor:'pointer',borderRadius:6,background:adminTab==='athletes'?'#31708E22':'none',border:`1px solid ${adminTab==='athletes'?'#31708E':'#C4CDD4'}`,color:adminTab==='athletes'?'#31708E':'#AEB9C0'}}>👥 Atletas</button>
+              <button onClick={()=>setAdminTab('activity')} style={{padding:'4px 12px',fontSize:11,fontWeight:600,cursor:'pointer',borderRadius:6,background:adminTab==='activity'?'#31708E22':'none',border:`1px solid ${adminTab==='activity'?'#31708E':'#C4CDD4'}`,color:adminTab==='activity'?'#31708E':'#AEB9C0'}}>📊 Actividad</button>
+            </>
+          )}
+          <button onClick={()=>setCambiandoPass(true)} title="Cambiar mi contraseña"
+            style={{padding:'4px 10px',fontSize:11,cursor:'pointer',borderRadius:6,background:'none',border:'1px solid #C4CDD4',color:'#AEB9C0'}}>
+            🔑{!isAdmin && ' Contraseña'}
+          </button>
+        </div>
       </div>
 
       {/* Tabs de admin */}
