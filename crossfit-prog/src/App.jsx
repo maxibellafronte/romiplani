@@ -19,7 +19,7 @@ const BTYPES = {
   running:   { label: 'Running',              bg: '#4A7A64', accent: '#325745' },
 }
 
-const DL = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB']
+const DL = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 const DK = ['lun', 'mar', 'mie', 'jue', 'vie', 'sab']
 
 function getMon(year, week) {
@@ -39,9 +39,8 @@ function fmtDate(d) {
   return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`
 }
 function fmtDateLong(d) {
-  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
   const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
-  return `${dias[d.getDay()]} ${d.getDate()} ${meses[d.getMonth()]}`
+  return `${d.getDate()} ${meses[d.getMonth()]}`
 }
 function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36) }
 function emptyW() {
