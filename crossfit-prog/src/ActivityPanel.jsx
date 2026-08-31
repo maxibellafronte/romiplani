@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabaseAdmin } from './supabase'
+import { getLoginLogs } from './supabase'
 
 const ACCENT = '#31708E'
 
@@ -24,14 +24,7 @@ export default function ActivityPanel() {
   const load = async () => {
     setLoading(true)
     try {
-      const since = new Date()
-      since.setDate(since.getDate() - dateRange)
-      const { data, error } = await supabaseAdmin
-        .from('login_logs')
-        .select('*')
-        .gte('created_at', since.toISOString())
-        .order('created_at', { ascending: false })
-      if (error) throw error
+      const data = await getLoginLogs(dateRange)
       setLogs(data || [])
     } catch(e) {
       setError('No se pudieron cargar los logs')

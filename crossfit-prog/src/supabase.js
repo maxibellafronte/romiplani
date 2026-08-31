@@ -2,10 +2,40 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-const serviceKey  = import.meta.env.VITE_SUPABASE_SERVICE_KEY
 
+// Un solo cliente, con la anon key (pública por diseño). Las operaciones
+// privilegiadas NO se hacen acá: viven en /api/admin/*, del lado del servidor,
+// que es el único lugar donde existe la service_role key.
 export const supabase = createClient(supabaseUrl, supabaseKey)
-export const supabaseAdmin = createClient(supabaseUrl, serviceKey)
+
+// Llama a un endpoint admin adjuntando el token de sesión del usuario.
+// El servidor valida el token y que el perfil tenga role='admin'.
+async function apiAdmin(path, { method = 'GET', body, params } = {}) {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) throw new Error('Tu sesión expiró. Volvé a iniciar sesión.')
+
+  const url = new URL(path, window.location.origin)
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      if (v != null) url.searchParams.set(k, v)
+    }
+  }
+
+  const res = await fetch(url, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  })
+
+  if (!res.ok) {
+    const detalle = await res.json().catch(() => ({}))
+    throw new Error(detalle.error || `Error ${res.status}`)
+  }
+  return res.json()
+}
 
 // ── Programación ──────────────────────────────────────────
 export async function loadWeek(year, week, track = 'General') {
@@ -21,6 +51,7 @@ export async function loadWeek(year, week, track = 'General') {
 }
 
 export async function saveWeek(year, week, weekData, track = 'General') {
+  // La escritura la autoriza RLS: solo perfiles con role='admin' pasan.
   const { error } = await supabase
     .from('programming')
     .upsert(
@@ -57,29 +88,33 @@ export async function getProfile(userId) {
   return data || null
 }
 
-// ── Gestión atletas ───────────────────────────────────────
+// ── Gestión atletas (vía /api/admin, requiere role='admin') ─
 export async function getAllProfiles() {
-  const { data, error } = await supabaseAdmin
-    .from('profiles').select('*').order('created_at', { ascending: false })
-  if (error) throw error
-  return data
+  return apiAdmin('/api/admin/profiles')
 }
 
 export async function updateProfile(userId, updates) {
-  const { error } = await supabaseAdmin.from('profiles').update(updates).eq('id', userId)
-  if (error) throw error
+  return apiAdmin('/api/admin/profiles', { method: 'PATCH', body: { userId, updates } })
 }
 
-// Borra el usuario de Auth y de profiles. No falla si el usuario de Auth ya no existe.
 export async function deleteUserFully(userId) {
-  // 1. Intentar borrar de Authentication (puede no existir)
-  try {
-    await supabaseAdmin.auth.admin.deleteUser(userId)
-  } catch (e) {
-    // Si no existe en Auth, seguimos igual para limpiar el profile
-    console.log('Usuario no encontrado en Auth (posible registro huérfano):', e.message)
-  }
-  // 2. Borrar el perfil de la tabla profiles siempre
-  const { error } = await supabaseAdmin.from('profiles').delete().eq('id', userId)
-  if (error) throw error
+  return apiAdmin('/api/admin/profiles', { method: 'DELETE', params: { userId } })
+}
+
+// ── Actividad ─────────────────────────────────────────────
+export async function getLoginLogs(days = 30) {
+  return apiAdmin('/api/admin/activity', { params: { days } })
+}
+
+// ── Resultados de WOD de otros atletas ────────────────────
+export async function updateWodResult(blockId, userId, result, notes) {
+  return apiAdmin('/api/admin/wod-results', {
+    method: 'PATCH', body: { blockId, userId, result, notes },
+  })
+}
+
+export async function deleteWodResult(blockId, userId) {
+  return apiAdmin('/api/admin/wod-results', {
+    method: 'DELETE', params: { blockId, userId },
+  })
 }

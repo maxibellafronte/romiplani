@@ -5,7 +5,6 @@ import PendingScreen from './PendingScreen'
 import AthletesPanel from './AthletesPanel'
 import WodLeaderboard from './WodLeaderboard'
 
-const ADMIN_PASS = import.meta.env.VITE_ADMIN_PASSWORD || 'coach2026'
 const ACCENT = '#31708E'
 
 const BTYPES = {
@@ -65,35 +64,6 @@ const S = {
   input: { display:'block', width:'100%', background:'#E2E8EA', border:'1px solid #AEB9C0', borderRadius:8, color:'#1F3A4A', padding:'10px 12px', fontSize:13, outline:'none', marginTop:5 },
   btnGhost: { padding:'10px 16px', background:'none', border:'1px solid #AEB9C0', borderRadius:8, color:'#7A8FA0', cursor:'pointer', fontSize:13 },
   btnPink: { padding:'10px 20px', background:ACCENT, border:'none', borderRadius:8, color:'white', cursor:'pointer', fontSize:13, fontWeight:700 },
-}
-
-// ── Login Admin Modal ─────────────────────────────────────
-function LoginModal({ onLogin, onClose }) {
-  const [pass, setPass] = useState('')
-  const [err, setErr] = useState(false)
-  const go = () => { if (pass === ADMIN_PASS) onLogin(); else { setErr(true); setTimeout(()=>setErr(false),1500) } }
-  return (
-    <div style={S.overlay} onClick={e => e.target===e.currentTarget && onClose()}>
-      <div style={S.modal}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}>
-          <span style={{fontWeight:700,fontSize:14,color:'#1F3A4A'}}>Acceso Coach</span>
-          <button onClick={onClose} style={{background:'none',border:'none',color:'#7A8FA0',fontSize:22,cursor:'pointer'}}>×</button>
-        </div>
-        <div style={{textAlign:'center',marginBottom:18}}>
-          <div style={{fontSize:34,marginBottom:8}}>🔐</div>
-          <p style={{fontSize:12,color:'#7A8FA0'}}>Ingresá la contraseña de administrador</p>
-        </div>
-        <input type="password" value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==='Enter'&&go()}
-          placeholder="Contraseña..." autoFocus
-          style={{...S.input, borderColor:err?ACCENT:'#AEB9C0', marginBottom:6}} />
-        {err && <p style={{color:ACCENT,fontSize:11,marginBottom:10,textAlign:'center'}}>Contraseña incorrecta</p>}
-        <div style={{display:'flex',gap:8,marginTop:14}}>
-          <button onClick={onClose} style={{...S.btnGhost,flex:1}}>Cancelar</button>
-          <button onClick={go} style={{...S.btnPink,flex:1}}>Entrar</button>
-        </div>
-      </div>
-    </div>
-  )
 }
 
 // ── Block Modal ───────────────────────────────────────────
@@ -313,8 +283,7 @@ export default function App() {
   const [wdata, setWdata] = useState(emptyW())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [showLogin, setShowLogin] = useState(false)
+  const [editMode, setEditMode] = useState(false)
   const [addDay, setAddDay] = useState(null)
   const [editBlk, setEditBlk] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -349,6 +318,13 @@ export default function App() {
 
   const userId   = session?.user?.id
   const userName = profile?.full_name || session?.user?.email || 'Atleta'
+
+  // Permiso real: vive en el perfil y lo valida el servidor (RLS + /api/admin).
+  // Acá solo decide qué UI se muestra.
+  const isCoach = profile?.role === 'admin'
+  // El modo edición es un interruptor explícito, para no editar sin querer
+  // con la sesión abierta. No es un control de seguridad.
+  const isAdmin = isCoach && editMode
 
   useEffect(() => {
     if (!session) return
@@ -425,8 +401,7 @@ export default function App() {
 
   return (
     <div style={{minHeight:'100vh',background:'#DCE3E8',color:'#1F3A4A',fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',display:'flex',flexDirection:'column'}}>
-      {showLogin && <LoginModal onLogin={()=>{setIsAdmin(true);setShowLogin(false)}} onClose={()=>setShowLogin(false)} />}
-      {addDay && <BlockModal block={null} onSave={b=>saveBlock(addDay,b)} onClose={()=>setAddDay(null)} />}
+      {addDay &&<BlockModal block={null} onSave={b=>saveBlock(addDay,b)} onClose={()=>setAddDay(null)} />}
       {editBlk && <BlockModal block={editBlk.block} onSave={b=>saveBlock(editBlk.dk,b)} onClose={()=>setEditBlk(null)} />}
 
       {/* Header */}
@@ -439,10 +414,10 @@ export default function App() {
                 {wdata.title && <div style={{fontSize:10,color:ACCENT,fontWeight:600,marginTop:2}}>{wdata.title}</div>}
               </div>
               <div style={{display:'flex',gap:6,alignItems:'center'}}>
-                {isAdmin
-                  ? <button onClick={()=>setIsAdmin(false)} style={{background:ACCENT,border:'none',borderRadius:8,color:'white',cursor:'pointer',fontSize:10,padding:'7px 13px',fontWeight:800}}>● ADMIN</button>
-                  : <button onClick={()=>setShowLogin(true)} style={{background:'none',border:'1px solid #AEB9C0',borderRadius:8,color:'#7A8FA0',cursor:'pointer',fontSize:10,padding:'7px 13px'}}>COACH</button>
-                }
+                {isCoach && (editMode
+                  ? <button onClick={()=>setEditMode(false)} style={{background:ACCENT,border:'none',borderRadius:8,color:'white',cursor:'pointer',fontSize:10,padding:'7px 13px',fontWeight:800}}>● EDITANDO</button>
+                  : <button onClick={()=>setEditMode(true)} style={{background:'none',border:'1px solid #AEB9C0',borderRadius:8,color:'#7A8FA0',cursor:'pointer',fontSize:10,padding:'7px 13px'}}>EDITAR</button>
+                )}
                 <button onClick={signOut} style={{background:'none',border:'1px solid #C4CDD4',borderRadius:8,color:'#AEB9C0',cursor:'pointer',fontSize:16,padding:'5px 10px'}}>↩</button>
               </div>
             </div>
@@ -472,10 +447,10 @@ export default function App() {
             </div>
             <div style={{display:'flex',alignItems:'center',gap:8}}>
               {saving && <span style={{fontSize:9,color:'#AEB9C0'}}>GUARDANDO...</span>}
-              {isAdmin
-                ? <button onClick={()=>setIsAdmin(false)} style={{background:ACCENT,border:'none',borderRadius:6,color:'white',cursor:'pointer',fontSize:10,padding:'6px 12px',fontWeight:800}}>● ADMIN</button>
-                : <button onClick={()=>setShowLogin(true)} style={{background:'none',border:'1px solid #C4CDD4',borderRadius:6,color:'#AEB9C0',cursor:'pointer',fontSize:10,padding:'6px 12px'}}>COACH</button>
-              }
+              {isCoach && (editMode
+                ? <button onClick={()=>setEditMode(false)} style={{background:ACCENT,border:'none',borderRadius:6,color:'white',cursor:'pointer',fontSize:10,padding:'6px 12px',fontWeight:800}}>● EDITANDO</button>
+                : <button onClick={()=>setEditMode(true)} style={{background:'none',border:'1px solid #C4CDD4',borderRadius:6,color:'#AEB9C0',cursor:'pointer',fontSize:10,padding:'6px 12px'}}>EDITAR</button>
+              )}
               <button onClick={signOut} title="Cerrar sesión" style={{background:'none',border:'1px solid #C4CDD4',borderRadius:6,color:'#AEB9C0',cursor:'pointer',fontSize:10,padding:'6px 10px'}}>↩</button>
             </div>
           </div>

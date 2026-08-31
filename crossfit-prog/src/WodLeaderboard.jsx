@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase, supabaseAdmin } from './supabase'
+import { supabase, updateWodResult, deleteWodResult } from './supabase'
 
 const ACCENT = '#31708E'
 
@@ -241,11 +241,7 @@ export default function WodLeaderboard({ blockId, resultType, userId, userName, 
   const handleDelete = async (resultUserId) => {
     if (!confirm('¿Eliminar este resultado?')) return
     try {
-      await supabaseAdmin
-        .from('wod_results')
-        .delete()
-        .eq('block_id', blockId)
-        .eq('user_id', resultUserId)
+      await deleteWodResult(blockId, resultUserId)
       await load()
     } catch (e) {
       alert('Error al eliminar: ' + e.message)
@@ -268,15 +264,7 @@ export default function WodLeaderboard({ blockId, resultType, userId, userName, 
     if (!adminEditVal.trim()) return
     setAdminSaving(true)
     try {
-      const { error } = await supabaseAdmin
-        .from('wod_results')
-        .update({
-          result: adminEditVal.trim(),
-          notes: adminEditNotes.trim() || null,
-        })
-        .eq('block_id', blockId)
-        .eq('user_id', resultUserId)
-      if (error) throw error
+      await updateWodResult(blockId, resultUserId, adminEditVal, adminEditNotes)
       cancelAdminEdit()
       await load()
     } catch (e) {
