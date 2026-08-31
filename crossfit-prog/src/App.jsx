@@ -3,6 +3,7 @@ import { supabase, loadWeek, saveWeek, getProfile, signOut } from './supabase'
 import AuthScreen from './AuthScreen'
 import PendingScreen from './PendingScreen'
 import AthletesPanel from './AthletesPanel'
+import ActivityPanel from './ActivityPanel'
 import WodLeaderboard from './WodLeaderboard'
 
 const ACCENT = '#31708E'
@@ -466,13 +467,16 @@ export default function App() {
           <div style={{display:'flex',gap:6}}>
             <button onClick={()=>setAdminTab('programming')} style={{padding:'4px 12px',fontSize:11,fontWeight:600,cursor:'pointer',borderRadius:6,background:adminTab==='programming'?'#31708E22':'none',border:`1px solid ${adminTab==='programming'?'#31708E':'#C4CDD4'}`,color:adminTab==='programming'?'#31708E':'#AEB9C0'}}>📅 Programación</button>
             <button onClick={()=>setAdminTab('athletes')} style={{padding:'4px 12px',fontSize:11,fontWeight:600,cursor:'pointer',borderRadius:6,background:adminTab==='athletes'?'#31708E22':'none',border:`1px solid ${adminTab==='athletes'?'#31708E':'#C4CDD4'}`,color:adminTab==='athletes'?'#31708E':'#AEB9C0'}}>👥 Atletas</button>
+            <button onClick={()=>setAdminTab('activity')} style={{padding:'4px 12px',fontSize:11,fontWeight:600,cursor:'pointer',borderRadius:6,background:adminTab==='activity'?'#31708E22':'none',border:`1px solid ${adminTab==='activity'?'#31708E':'#C4CDD4'}`,color:adminTab==='activity'?'#31708E':'#AEB9C0'}}>📊 Actividad</button>
           </div>
         )}
       </div>
 
-      {/* Tab atletas */}
+      {/* Tabs de admin */}
       {isAdmin && adminTab === 'athletes' ? (
         <div style={{flex:1,overflowY:'auto'}}><AthletesPanel /></div>
+      ) : isAdmin && adminTab === 'activity' ? (
+        <div style={{flex:1,overflowY:'auto'}}><ActivityPanel /></div>
       ) : (
         <>
           {/* Título semana */}
