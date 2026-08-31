@@ -141,18 +141,18 @@ create policy "wod_delete_own" on public.wod_results
 
 
 -- ── PASO 6 ── login_logs ────────────────────────────────────
--- Sin políticas: desde el navegador no se leen ni se escriben.
--- /api/admin/activity los lee con la service_role key, que ignora RLS.
+-- Nadie los lee desde el navegador: /api/admin/activity los lee con la
+-- service_role key del servidor, que ignora RLS.
+-- Escribir sí: signIn() inserta una fila por login, y solo puede
+-- insertar filas a nombre propio.
 alter table public.login_logs enable row level security;
 
-drop policy if exists "logs_select" on public.login_logs;
+drop policy if exists "logs_select"      on public.login_logs;
+drop policy if exists "logs_insert_own"  on public.login_logs;
 
--- Si después de esto los logins dejan de registrarse, quiere decir que
--- los escribía el cliente y no un trigger. En ese caso, descomentá:
---
---   create policy "logs_insert_own" on public.login_logs
---     for insert to authenticated
---     with check (user_id = auth.uid());
+create policy "logs_insert_own" on public.login_logs
+  for insert to authenticated
+  with check (user_id = auth.uid());
 
 
 -- ── PASO 7 ── Marcar a los coaches ──────────────────────────

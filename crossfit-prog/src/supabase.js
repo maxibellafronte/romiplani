@@ -76,6 +76,25 @@ export async function signUp(email, password, fullName) {
 export async function signIn(email, password) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
   if (error) throw error
+
+  // Un registro por login real. Va acá y no en loadProfile() a propósito:
+  // loadProfile corre en cada recarga de página y en cada refresco de token
+  // (~1 vez por hora con la pestaña abierta), así que registrar ahí inflaba
+  // la cuenta por 100. Esto solo corre cuando alguien entra sus credenciales.
+  if (data.user) {
+    try {
+      const perfil = await getProfile(data.user.id)
+      await supabase.from('login_logs').insert({
+        user_id: data.user.id,
+        user_name: perfil?.full_name || null,
+        email: perfil?.email || data.user.email || null,
+      })
+    } catch (e) {
+      // Nunca bloquear el login por no poder registrarlo.
+      console.log('No se pudo registrar el acceso:', e)
+    }
+  }
+
   return data
 }
 
