@@ -76,26 +76,49 @@ export async function signUp(email, password, fullName) {
 export async function signIn(email, password) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
   if (error) throw error
-
-  // Un registro por login real. Va acá y no en loadProfile() a propósito:
-  // loadProfile corre en cada recarga de página y en cada refresco de token
-  // (~1 vez por hora con la pestaña abierta), así que registrar ahí inflaba
-  // la cuenta por 100. Esto solo corre cuando alguien entra sus credenciales.
-  if (data.user) {
-    try {
-      const perfil = await getProfile(data.user.id)
-      await supabase.from('login_logs').insert({
-        user_id: data.user.id,
-        user_name: perfil?.full_name || null,
-        email: perfil?.email || data.user.email || null,
-      })
-    } catch (e) {
-      // Nunca bloquear el login por no poder registrarlo.
-      console.log('No se pudo registrar el acceso:', e)
-    }
-  }
-
   return data
+}
+
+// Registra que el atleta abrió la app hoy: como mucho una fila por persona
+// por día. La métrica es "días distintos en que entró", no cuántas veces
+// recargó la página — el código original registraba en cada carga y en cada
+// refresco de token, y por eso contaba ~90 accesos diarios por persona.
+export async function registrarVisitaDiaria(userId, perfil) {
+  if (!userId) return
+
+  const inicioDelDia = new Date()
+  inicioDelDia.setHours(0, 0, 0, 0)
+  const claveHoy = `${inicioDelDia.getFullYear()}-${inicioDelDia.getMonth()+1}-${inicioDelDia.getDate()}`
+  const cache = `visita:${userId}`
+
+  // Atajo local para no consultar la base en cada recarga. Si falla
+  // (modo privado, storage bloqueado) seguimos contra la base igual.
+  try {
+    if (localStorage.getItem(cache) === claveHoy) return
+  } catch (e) { /* sin storage: verificamos contra la base */ }
+
+  try {
+    // Autoritativo: cubre el caso de entrar desde otro dispositivo.
+    const { data: yaRegistrado } = await supabase
+      .from('login_logs')
+      .select('id')
+      .eq('user_id', userId)
+      .gte('created_at', inicioDelDia.toISOString())
+      .limit(1)
+
+    if (!yaRegistrado?.length) {
+      await supabase.from('login_logs').insert({
+        user_id: userId,
+        user_name: perfil?.full_name || null,
+        email: perfil?.email || null,
+      })
+    }
+
+    try { localStorage.setItem(cache, claveHoy) } catch (e) { /* ignorar */ }
+  } catch (e) {
+    // Nunca romper la app por no poder registrar una visita.
+    console.log('No se pudo registrar la visita:', e)
+  }
 }
 
 export async function signOut() {

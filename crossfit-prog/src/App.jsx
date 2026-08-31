@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { supabase, loadWeek, saveWeek, getProfile, signOut } from './supabase'
+import { supabase, loadWeek, saveWeek, getProfile, signOut, registrarVisitaDiaria } from './supabase'
 import AuthScreen from './AuthScreen'
 import PendingScreen from './PendingScreen'
 import AthletesPanel from './AthletesPanel'
@@ -315,6 +315,8 @@ export default function App() {
     const p = await getProfile(userId)
     setProfile(p)
     setAuthLoading(false)
+    // Sin await: si falla o tarda, no debe demorar la carga de la app.
+    registrarVisitaDiaria(userId, p)
   }
 
   const userId   = session?.user?.id

@@ -148,7 +148,15 @@ create policy "wod_delete_own" on public.wod_results
 alter table public.login_logs enable row level security;
 
 drop policy if exists "logs_select"      on public.login_logs;
+drop policy if exists "logs_select_own"  on public.login_logs;
 drop policy if exists "logs_insert_own"  on public.login_logs;
+
+-- Cada uno ve solo sus propias filas. No es para mostrarlas: la app las
+-- consulta para saber si ya registró la visita de hoy y no duplicarla.
+-- El panel del coach NO usa esto: lee todo vía /api/admin/activity.
+create policy "logs_select_own" on public.login_logs
+  for select to authenticated
+  using (user_id = auth.uid());
 
 create policy "logs_insert_own" on public.login_logs
   for insert to authenticated

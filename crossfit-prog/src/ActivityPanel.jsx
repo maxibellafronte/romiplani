@@ -9,8 +9,17 @@ function fmtDate(d) {
 function fmtTime(d) {
   return new Date(d).toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' })
 }
+// Clave de agrupación por día LOCAL. No usar toISOString(): convierte a
+// UTC y en Argentina (UTC−3) corre la fecha un día para atrás.
 function fmtDateKey(d) {
-  return new Date(d).toISOString().split('T')[0]
+  const f = new Date(d)
+  return `${f.getFullYear()}-${String(f.getMonth()+1).padStart(2,'0')}-${String(f.getDate()).padStart(2,'0')}`
+}
+// Muestra una clave "2026-08-31" como "31/08/2026". Se formatea a mano
+// porque new Date("2026-08-31") la interpretaría como medianoche UTC.
+function fmtDayKey(key) {
+  const [y, m, d] = key.split('-')
+  return `${d}/${m}/${y}`
 }
 
 export default function ActivityPanel() {
@@ -120,7 +129,7 @@ export default function ActivityPanel() {
             return (
               <div key={day} style={{background:'#EEF2F0',border:'1px solid #C4CDD4',borderRadius:8,padding:'10px 14px',marginBottom:8}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
-                  <span style={{fontSize:13,fontWeight:700,color:'#1F3A4A'}}>{fmtDate(day)}</span>
+                  <span style={{fontSize:13,fontWeight:700,color:'#1F3A4A'}}>{fmtDayKey(day)}</span>
                   <div style={{display:'flex',gap:12}}>
                     <span style={{fontSize:11,color:ACCENT,fontWeight:600}}>{dayLogs.length} accesos</span>
                     <span style={{fontSize:11,color:'#7A8FA0'}}>{uniqueUsers} atleta{uniqueUsers!==1?'s':''}</span>
@@ -201,7 +210,7 @@ export default function ActivityPanel() {
             },{})).sort((a,b)=>b[0].localeCompare(a[0])).map(([day,dayLogs])=>(
             <div key={day} style={{background:'#EEF2F0',border:'1px solid #C4CDD4',borderRadius:8,padding:'10px 14px',marginBottom:8}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:dayLogs.length>1?8:0}}>
-                <span style={{fontSize:12,fontWeight:600,color:'#1F3A4A'}}>{fmtDate(day)}</span>
+                <span style={{fontSize:12,fontWeight:600,color:'#1F3A4A'}}>{fmtDayKey(day)}</span>
                 <span style={{fontSize:11,color:ACCENT,fontWeight:600}}>{dayLogs.length} {dayLogs.length===1?'acceso':'accesos'}</span>
               </div>
               {dayLogs.length > 1 && (
