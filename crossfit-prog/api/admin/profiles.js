@@ -46,12 +46,21 @@ export default withAdmin(async (req, res, caller) => {
       return res.status(400).json({ error: 'No podés borrar tu propia cuenta' })
     }
 
-    // Puede no existir en Auth (registro huérfano): seguimos igual
-    // para limpiar el perfil.
-    try {
-      await admin.auth.admin.deleteUser(userId)
-    } catch (e) {
-      console.log('Usuario no encontrado en Auth (posible registro huérfano):', e.message)
+    // deleteUser devuelve { error }, no lanza excepción.
+    const { error: errorAuth } = await admin.auth.admin.deleteUser(userId)
+
+    // Que no exista en Auth es aceptable (registro huérfano): seguimos
+    // para limpiar el perfil. Cualquier otro fallo se reporta, porque si
+    // no borraríamos el perfil dejando el login vivo.
+    const noExiste = errorAuth && /not found|does not exist/i.test(errorAuth.message || '')
+    if (errorAuth && !noExiste) {
+      console.error('Fallo al borrar de Auth:', errorAuth)
+      return res.status(500).json({
+        error: 'No se pudo borrar la cuenta de acceso: ' + errorAuth.message,
+      })
+    }
+    if (noExiste) {
+      console.log('Usuario no encontrado en Auth (registro huérfano), limpio el perfil')
     }
 
     const { error } = await admin.from('profiles').delete().eq('id', userId)
