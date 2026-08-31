@@ -16,13 +16,37 @@
 
 
 -- ── PASO 0 ── Mirá qué hay antes de tocar nada ──────────────
--- Corré SOLO esta línea primero y anotá el email de Romina.
+-- Correr SOLO esto primero. No modifica nada: lista las columnas
+-- reales de las tablas, para no asumir que existe algo que no está.
 --
---   select id, email, full_name, role, status
+--   select table_name, column_name, data_type
+--   from information_schema.columns
+--   where table_schema = 'public'
+--     and table_name in ('profiles','programming','wod_results','login_logs')
+--   order by table_name, ordinal_position;
+--
+-- Y para sacar el email de Romina (sin la columna role, que todavía
+-- no existe):
+--
+--   select id, email, full_name, status
 --   from public.profiles order by created_at;
 
 
--- ── PASO 1 ── ¿El usuario actual es coach? ──────────────────
+-- ── PASO 1 ── Crear la columna de rol ───────────────────────
+-- profiles no tenía columna role: hay que agregarla. Todos los
+-- perfiles existentes quedan como 'user'; en el PASO 7 marcamos
+-- a los coaches.
+alter table public.profiles
+  add column if not exists role text not null default 'user';
+
+-- Solo estos dos valores son válidos.
+alter table public.profiles
+  drop constraint if exists profiles_role_check;
+alter table public.profiles
+  add constraint profiles_role_check check (role in ('user', 'admin'));
+
+
+-- ── PASO 2 ── ¿El usuario actual es coach? ──────────────────
 -- SECURITY DEFINER hace que la función lea profiles sin pasar por
 -- RLS. Sin eso, una política sobre profiles que consulta profiles
 -- entra en recursión infinita.
@@ -43,7 +67,7 @@ revoke execute on function public.is_admin() from public;
 grant  execute on function public.is_admin() to authenticated;
 
 
--- ── PASO 2 ── programming ───────────────────────────────────
+-- ── PASO 3 ── programming ───────────────────────────────────
 -- Leen todos los logueados; escriben solo los coaches.
 alter table public.programming enable row level security;
 
@@ -62,7 +86,7 @@ create policy "programming_write" on public.programming
   with check (public.is_admin());
 
 
--- ── PASO 3 ── profiles ──────────────────────────────────────
+-- ── PASO 4 ── profiles ──────────────────────────────────────
 -- Cada atleta ve solo su perfil; el coach ve todos.
 alter table public.profiles enable row level security;
 
@@ -88,7 +112,7 @@ revoke update on public.profiles from authenticated;
 grant  update (full_name) on public.profiles to authenticated;
 
 
--- ── PASO 4 ── wod_results ───────────────────────────────────
+-- ── PASO 5 ── wod_results ───────────────────────────────────
 -- Todos ven el leaderboard; cada uno toca solo su propio resultado.
 -- El coach edita/borra los ajenos vía /api/admin/wod-results.
 alter table public.wod_results enable row level security;
@@ -116,7 +140,7 @@ create policy "wod_delete_own" on public.wod_results
   using (user_id = auth.uid());
 
 
--- ── PASO 5 ── login_logs ────────────────────────────────────
+-- ── PASO 6 ── login_logs ────────────────────────────────────
 -- Sin políticas: desde el navegador no se leen ni se escriben.
 -- /api/admin/activity los lee con la service_role key, que ignora RLS.
 alter table public.login_logs enable row level security;
@@ -131,7 +155,7 @@ drop policy if exists "logs_select" on public.login_logs;
 --     with check (user_id = auth.uid());
 
 
--- ── PASO 6 ── Marcar a los coaches ──────────────────────────
+-- ── PASO 7 ── Marcar a los coaches ──────────────────────────
 -- ⚠️ Reemplazá el email de Romina por el real (lo sacás del PASO 0)
 -- ANTES de correr esto. Si te equivocás, quedás sin acceso de coach.
 update public.profiles
@@ -142,7 +166,7 @@ where email in (
 );
 
 
--- ── PASO 7 ── Verificación ──────────────────────────────────
+-- ── PASO 8 ── Verificación ──────────────────────────────────
 -- Tiene que devolver exactamente 2 filas: vos y Romina.
 select email, full_name, role, status
 from public.profiles
