@@ -4,6 +4,7 @@ import AuthScreen from './AuthScreen'
 import PendingScreen from './PendingScreen'
 import AthletesPanel from './AthletesPanel'
 import ActivityPanel from './ActivityPanel'
+import CambiarPassword from './CambiarPassword'
 import WodLeaderboard from './WodLeaderboard'
 
 const ACCENT = '#31708E'
@@ -390,6 +391,11 @@ export default function App() {
     </div>
   )
   if (!session) return <AuthScreen />
+  // Va antes que todo lo demás: si la coach reseteó la contraseña, no se
+  // ve nada de la app hasta elegir una nueva.
+  if (profile?.must_change_password) return (
+    <CambiarPassword nombre={profile?.full_name} onListo={()=>loadProfile(session.user.id)} />
+  )
   if (profile?.status === 'pending') return <PendingScreen profile={profile} />
   if (profile?.status === 'inactive') return (
     <div style={{minHeight:'100vh',background:'#DCE3E8',display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>

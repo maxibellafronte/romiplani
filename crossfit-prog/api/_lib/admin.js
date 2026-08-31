@@ -41,6 +41,37 @@ export async function requireAdmin(req, res) {
   return { user, profile }
 }
 
+// Igual que requireAdmin pero sin exigir rol: solo sesión válida.
+// Para acciones que cada uno hace sobre su propia cuenta.
+export async function requireUser(req, res) {
+  const header = req.headers.authorization || ''
+  const token = header.startsWith('Bearer ') ? header.slice(7) : null
+  if (!token) {
+    res.status(401).json({ error: 'No autenticado' })
+    return null
+  }
+
+  const { data: { user }, error } = await admin.auth.getUser(token)
+  if (error || !user) {
+    res.status(401).json({ error: 'Sesión inválida o expirada' })
+    return null
+  }
+  return { user }
+}
+
+export function withUser(handler) {
+  return async (req, res) => {
+    try {
+      const caller = await requireUser(req, res)
+      if (!caller) return
+      return await handler(req, res, caller)
+    } catch (e) {
+      console.error('Error en endpoint:', e)
+      res.status(500).json({ error: 'Error interno del servidor' })
+    }
+  }
+}
+
 // Wrapper: aplica requireAdmin y centraliza el manejo de errores.
 export function withAdmin(handler) {
   return async (req, res) => {

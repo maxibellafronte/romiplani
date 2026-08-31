@@ -45,6 +45,13 @@ alter table public.profiles
 alter table public.profiles
   add constraint profiles_role_check check (role in ('user', 'admin'));
 
+-- Marca de "tiene una contraseña temporal y debe elegir una propia".
+-- La escribe solo el servidor (/api/admin/reset-password la pone,
+-- /api/account/password la saca): el atleta no tiene permiso de UPDATE
+-- sobre esta columna, así que no puede saltearse el cambio.
+alter table public.profiles
+  add column if not exists must_change_password boolean not null default false;
+
 
 -- ── PASO 2 ── ¿El usuario actual es coach? ──────────────────
 -- SECURITY DEFINER hace que la función lea profiles sin pasar por

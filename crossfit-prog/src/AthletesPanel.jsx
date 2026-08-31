@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getAllProfiles, updateProfile, deleteUserFully } from './supabase'
+import { getAllProfiles, updateProfile, deleteUserFully, resetearPassword } from './supabase'
 
 const ACCENT = '#31708E'
 const TRACKS = ['Scaled', 'Advanced', 'RX']
@@ -15,6 +15,9 @@ export default function AthletesPanel() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filter, setFilter] = useState('all') // 'all' | 'pending' | 'active' | 'inactive'
+  // Contraseña temporal recién generada: se muestra una sola vez, no se
+  // guarda en ningún lado en claro.
+  const [temporal, setTemporal] = useState(null) // { id, email, password }
 
   const load = async () => {
     setLoading(true)
@@ -36,6 +39,17 @@ export default function AthletesPanel() {
       setProfiles(prev => prev.map(p => p.id === id ? {...p, ...updates} : p))
     } catch(e) {
       alert('Error al actualizar: ' + e.message)
+    }
+  }
+
+  const handleReset = async (id, email) => {
+    if (!confirm(`¿Generar una contraseña temporal para ${email}?\n\nLa actual deja de funcionar, y al entrar se le va a pedir que elija una nueva.`)) return
+    try {
+      const { password } = await resetearPassword(id)
+      setTemporal({ id, email, password })
+      setProfiles(prev => prev.map(p => p.id === id ? {...p, must_change_password:true} : p))
+    } catch(e) {
+      alert('Error al resetear la contraseña: ' + e.message)
     }
   }
 
@@ -77,6 +91,37 @@ export default function AthletesPanel() {
 
   return (
     <div style={{padding:16}}>
+
+      {temporal && (
+        <div style={{marginBottom:16,padding:'14px 16px',background:'#E4EDF2',border:`1px solid ${ACCENT}`,borderRadius:10}}>
+          <div style={{fontSize:12,fontWeight:800,color:'#1F3A4A',marginBottom:8}}>
+            🔑 Contraseña temporal para {temporal.email}
+          </div>
+          <div style={{fontSize:22,fontWeight:800,color:ACCENT,letterSpacing:'0.06em',
+            background:'#EEF2F0',border:'1px solid #C4CDD4',borderRadius:8,
+            padding:'12px 14px',textAlign:'center',marginBottom:10,userSelect:'all'}}>
+            {temporal.password}
+          </div>
+          <p style={{fontSize:12,color:'#5A7286',lineHeight:1.5,marginBottom:12}}>
+            Pasásela y cerrá este aviso. <strong>No se vuelve a mostrar.</strong> Cuando
+            entre con ella, la app le va a pedir que elija una nueva; a partir de ahí
+            solo la sabe ella.
+          </p>
+          <div style={{display:'flex',gap:8}}>
+            <button onClick={()=>{navigator.clipboard?.writeText(temporal.password)}}
+              style={{flex:1,padding:'8px 12px',background:ACCENT,border:'none',borderRadius:7,
+                color:'white',cursor:'pointer',fontSize:12,fontWeight:700}}>
+              Copiar
+            </button>
+            <button onClick={()=>setTemporal(null)}
+              style={{flex:1,padding:'8px 12px',background:'none',border:'1px solid #AEB9C0',
+                borderRadius:7,color:'#7A8FA0',cursor:'pointer',fontSize:12}}>
+              Listo
+            </button>
+          </div>
+        </div>
+      )}
+
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
         <div style={{fontSize:11,fontWeight:700,color:'#31708E',letterSpacing:'0.1em',textTransform:'uppercase'}}>
           👥 Gestión de Atletas
@@ -166,6 +211,10 @@ export default function AthletesPanel() {
                         Desactivar
                       </button>
                     )}
+                    <button onClick={()=>handleReset(p.id,p.email)} title="Generar contraseña temporal"
+                      style={{padding:'6px 10px',background:'none',border:'1px solid #AEB9C0',borderRadius:6,color:'#7A8FA0',cursor:'pointer',fontSize:11}}>
+                      🔑
+                    </button>
                     <button onClick={()=>handleDelete(p.id,p.email)}
                       style={{padding:'6px 10px',background:'#EDDBDB',border:'1px solid #C25454',borderRadius:6,color:'#A33A3A',cursor:'pointer',fontSize:11}}>
                       🗑

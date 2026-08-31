@@ -173,6 +173,18 @@ export async function deleteUserFully(userId) {
   return apiAdmin('/api/admin/profiles', { method: 'DELETE', params: { userId } })
 }
 
+// ── Contraseñas ───────────────────────────────────────────
+// La coach resetea la de un atleta: devuelve una temporal de un solo uso
+// y marca la cuenta para que tenga que elegir una nueva al entrar.
+export async function resetearPassword(userId) {
+  return apiAdmin('/api/admin/reset-password', { method: 'POST', body: { userId } })
+}
+
+// Cada uno cambia la suya. El servidor saca el id del token de sesión.
+export async function cambiarMiPassword(password) {
+  return apiAdmin('/api/account/password', { method: 'POST', body: { password } })
+}
+
 // ── Actividad ─────────────────────────────────────────────
 export async function getLoginLogs(days = 30) {
   return apiAdmin('/api/admin/activity', { params: { days } })
