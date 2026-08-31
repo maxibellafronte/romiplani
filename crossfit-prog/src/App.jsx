@@ -105,7 +105,7 @@ function BlockModal({ block, onSave, onClose }) {
         </div>
 
         <span style={S.label}>Título</span>
-        <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Ej: Back Squat 5×5 @80%" style={S.input} />
+        <input value={title} onChange={e=>setTitle(e.target.value.toUpperCase())} placeholder="Ej: BACK SQUAT 5×5 @80%" style={S.input} />
 
         <span style={S.label}>Contenido / Descripción</span>
         <textarea value={content} onChange={e=>setContent(e.target.value)} rows={6}
@@ -173,7 +173,7 @@ function BlockPill({ block, isAdmin, isMobile, userId, userName, onEdit, onDel }
           <span style={{fontSize:10,fontWeight:800,textTransform:'uppercase',letterSpacing:'0.1em',color:t.accent}}>{t.label}</span>
           {hasLeaderboard && <span style={{fontSize:9,background:ACCENT+'30',color:ACCENT,padding:'1px 6px',borderRadius:8,fontWeight:700,letterSpacing:'0.06em'}}>🏆</span>}
           {block.title && !open && (
-            <span style={{fontSize:12,color:'#5A7286',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>— {block.title}</span>
+            <span style={{fontSize:12,color:'#5A7286',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',textTransform:'uppercase'}}>— {block.title}</span>
           )}
         </div>
         <div style={{display:'flex',alignItems:'center',gap:6,flexShrink:0}}>
@@ -190,7 +190,7 @@ function BlockPill({ block, isAdmin, isMobile, userId, userName, onEdit, onDel }
       </div>
       {open && (
         <div style={{padding:isMobile?'0 12px 12px':'0 10px 10px',borderTop:`1px solid ${t.bg}30`}}>
-          {block.title && <div style={{fontSize:isMobile?14:13,fontWeight:700,color:'#1F3A4A',marginTop:10,marginBottom:block.content?6:0}}>{block.title}</div>}
+          {block.title && <div style={{fontSize:isMobile?14:13,fontWeight:700,color:'#1F3A4A',marginTop:10,marginBottom:block.content?6:0,textTransform:'uppercase'}}>{block.title}</div>}
           {block.content && <div style={{fontSize:isMobile?13:11,color:'#5A7286',whiteSpace:'pre-wrap',lineHeight:1.6,wordBreak:'break-word'}}>{block.content}</div>}
           {hasLeaderboard && (
             <WodLeaderboard
