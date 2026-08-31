@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { signIn, signUp } from './supabase'
+import { signIn, signUp, esVersionVieja, actualizarApp } from './supabase'
 
 const ACCENT = '#31708E'
 
@@ -31,6 +31,7 @@ export default function AuthScreen() {
   const [fullName, setFullName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [necesitaActualizar, setNecesitaActualizar] = useState(false)
   const [success, setSuccess] = useState(false)
 
   const handleSubmit = async () => {
@@ -44,7 +45,8 @@ export default function AuthScreen() {
       else { await signUp(email, password, fullName); setSuccess(true) }
     } catch (e) {
       const msg = e.message || 'Error desconocido'
-      if (msg.includes('Invalid login')) setError('Email o contraseña incorrectos')
+      if (esVersionVieja(msg)) setNecesitaActualizar(true)
+      else if (msg.includes('Invalid login')) setError('Email o contraseña incorrectos')
       else if (msg.includes('already registered')) setError('Este email ya está registrado')
       else if (msg.includes('Email not confirmed')) setError('Confirmá tu email antes de ingresar')
       else setError(msg)
@@ -91,7 +93,22 @@ export default function AuthScreen() {
           placeholder={mode==='register'?'Mínimo 6 caracteres':'••••••••'}
           onKeyDown={e=>e.key==='Enter'&&handleSubmit()} style={S.input} />
 
-        {error && (
+        {necesitaActualizar ? (
+          <div style={{marginTop:12,padding:'14px 15px',background:'#E4EDF2',border:`1px solid ${ACCENT}`,borderRadius:8}}>
+            <div style={{fontSize:13,fontWeight:700,color:'#1F3A4A',marginBottom:6}}>
+              🔄 Hay una versión nueva de la app
+            </div>
+            <p style={{fontSize:12.5,color:'#5A7286',lineHeight:1.5,marginBottom:12}}>
+              Tu dispositivo guardó una versión vieja. Tocá el botón para actualizarla:
+              no vas a perder nada y solo hay que hacerlo una vez.
+            </p>
+            <button onClick={actualizarApp}
+              style={{width:'100%',padding:'10px 16px',background:ACCENT,border:'none',borderRadius:8,
+                color:'white',cursor:'pointer',fontSize:13,fontWeight:700}}>
+              Actualizar ahora
+            </button>
+          </div>
+        ) : error && (
           <div style={{marginTop:12,padding:'10px 13px',background:'#EDDBDB',border:'1px solid #C25454',borderRadius:8,color:'#A33A3A',fontSize:13}}>
             {error}
           </div>

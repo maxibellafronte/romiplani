@@ -61,6 +61,36 @@ export async function saveWeek(year, week, weekData, track = 'General') {
   if (error) throw error
 }
 
+// ── Recuperación de versiones viejas ──────────────────────
+// Un navegador (sobre todo la app instalada en el celular, que usa un
+// service worker) puede quedarse con un bundle viejo cacheado. Si ese
+// bundle trae una clave de API que ya fue revocada, Supabase rechaza
+// todo con estos errores. No es un problema de credenciales del usuario:
+// es que hay que actualizar la app.
+export function esVersionVieja(mensaje = '') {
+  return /legacy api keys are disabled|invalid api key|no api key found/i.test(mensaje)
+}
+
+// Borra todo lo cacheado, saca los service workers y recarga desde la red.
+export async function actualizarApp() {
+  try {
+    if ('serviceWorker' in navigator) {
+      const registros = await navigator.serviceWorker.getRegistrations()
+      await Promise.all(registros.map(r => r.unregister()))
+    }
+  } catch (e) { /* seguimos: lo importante es limpiar cachés y recargar */ }
+
+  try {
+    if ('caches' in window) {
+      const claves = await caches.keys()
+      await Promise.all(claves.map(k => caches.delete(k)))
+    }
+  } catch (e) { /* idem */ }
+
+  // Cache-busting: sin el parámetro, iOS puede volver a servir el HTML viejo.
+  window.location.replace(`${window.location.pathname}?v=${Date.now()}`)
+}
+
 // ── Auth ──────────────────────────────────────────────────
 export async function signUp(email, password, fullName) {
   const { data, error } = await supabase.auth.signUp({ email, password,
