@@ -19,7 +19,7 @@ const BTYPES = {
   running:   { label: 'Running',              bg: '#4A7A64', accent: '#325745' },
 }
 
-const DL = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+const DL = ['LUNES', 'MARTES', 'MIÉRCOLES', 'JUEVES', 'VIERNES', 'SÁBADO']
 const DK = ['lun', 'mar', 'mie', 'jue', 'vie', 'sab']
 
 function getMon(year, week) {
@@ -226,7 +226,7 @@ function DayCard({ dayKey, label, date, dateObj, data, isAdmin, isToday, isMobil
         <div style={{display:'flex',alignItems:'center',gap:8,minWidth:0}}>
           <span style={{fontWeight:900,fontSize:isMobile?16:12,color:isToday?ACCENT:'#5085A5',letterSpacing:'0.07em',flexShrink:0}}>{label}</span>
           {isToday && <span style={{fontSize:9,background:ACCENT,color:'white',padding:'2px 7px',borderRadius:10,fontWeight:700,flexShrink:0}}>HOY</span>}
-          {data.focus && !open && <span style={{fontSize:10,color:'#8A98A2',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>· {data.focus}</span>}
+          {data.focus && !open && <span style={{fontSize:10,color:'#8A98A2',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',textTransform:'uppercase'}}>· {data.focus}</span>}
         </div>
         <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
           <span style={{fontSize:isMobile?12:10,color:'#8A98A2'}}>{isMobile?fmtDateLong(dateObj):date}</span>
@@ -236,7 +236,7 @@ function DayCard({ dayKey, label, date, dateObj, data, isAdmin, isToday, isMobil
       {open && (
         <div style={{padding:isMobile?'10px 14px':'9px 10px',borderTop:`1px solid ${isToday?ACCENT+'30':'#C4CDD4'}`}}>
           {isAdmin ? (
-            <input value={data.focus||''} onChange={e=>onUpdate({...data,focus:e.target.value})}
+            <input value={data.focus||''} onChange={e=>onUpdate({...data,focus:e.target.value.toUpperCase()})}
               placeholder="foco del día..."
               style={{background:'none',border:'none',borderBottom:'1px solid #C4CDD4',color:'#5A7286',fontSize:10,
                 width:'100%',marginBottom:10,padding:'3px 0',outline:'none',textTransform:'uppercase',letterSpacing:'0.06em'}}
