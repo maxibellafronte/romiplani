@@ -113,9 +113,21 @@ export async function signIn(email, password) {
 // por día. La métrica es "días distintos en que entró", no cuántas veces
 // recargó la página — el código original registraba en cada carga y en cada
 // refresco de token, y por eso contaba ~90 accesos diarios por persona.
-export async function registrarVisitaDiaria(userId, perfil) {
-  if (!userId) return
+// Al abrir la app, getSession() y onAuthStateChange llaman a loadProfile
+// casi al mismo tiempo. Sin este candado, las dos llamadas consultan la
+// base antes de que ninguna haya insertado y quedan dos filas del mismo
+// día. Comparten la misma promesa mientras una está en vuelo.
+let visitaEnCurso = null
 
+export function registrarVisitaDiaria(userId, perfil) {
+  if (!userId) return Promise.resolve()
+  if (visitaEnCurso) return visitaEnCurso
+  visitaEnCurso = registrarVisita(userId, perfil)
+    .finally(() => { visitaEnCurso = null })
+  return visitaEnCurso
+}
+
+async function registrarVisita(userId, perfil) {
   const inicioDelDia = new Date()
   inicioDelDia.setHours(0, 0, 0, 0)
   const claveHoy = `${inicioDelDia.getFullYear()}-${inicioDelDia.getMonth()+1}-${inicioDelDia.getDate()}`
