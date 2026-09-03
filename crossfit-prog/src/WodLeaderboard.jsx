@@ -16,9 +16,33 @@ function parseResult(val, type) {
   return isNaN(n) ? null : n
 }
 
+// Enmascara lo tipeado como mm:ss: los dos puntos se agregan solos
+// después de los 2 dígitos de los minutos (09:45, 12:34)
+function maskTime(raw) {
+  const d = String(raw ?? '').replace(/\D/g, '').slice(0, 4)
+  if (d.length < 2) return d
+  if (d.length === 2) return d + ':'
+  return d.slice(0, 2) + ':' + d.slice(2)
+}
+
+// Normaliza un valor ya guardado (ej: '8:3') al formato del input ('08:03')
+function toInputTime(val) {
+  const m = String(val ?? '').trim().match(/^(\d{1,3}):(\d{1,2})$/)
+  if (m) return m[1].padStart(2, '0') + ':' + m[2].padStart(2, '0')
+  return maskTime(val)
+}
+
+// Para mostrar: sin el cero adelante en los minutos (09:45 → 9:45)
+function fmtTime(val) {
+  const m = String(val ?? '').trim().match(/^0*(\d+):(\d{2})$/)
+  return m ? parseInt(m[1], 10) + ':' + m[2] : String(val ?? '')
+}
+
 function fmtResult(val, type) {
   if (!val) return '—'
-  return type === 'kg' ? val + ' kg' : type === 'reps' ? val + ' reps' : val
+  if (type === 'kg') return val + ' kg'
+  if (type === 'reps') return val + ' reps'
+  return fmtTime(val)
 }
 
 function rankColor(r) {
@@ -108,7 +132,7 @@ export default function WodLeaderboard({ blockId, resultType, userId, userName, 
       const mine = data?.find(r => r.user_id === userId)
       if (mine) {
         setMyResult(mine.result)
-        setInputVal(mine.result)
+        setInputVal(resultType === 'tiempo' ? toInputTime(mine.result) : mine.result)
         setMyNotes(mine.notes || '')
         setNotesVal(mine.notes || '')
       }
@@ -128,8 +152,8 @@ export default function WodLeaderboard({ blockId, resultType, userId, userName, 
     }
     // Validar formato mm:ss para tiempo
     if (resultType === 'tiempo') {
-      if (!/^\d{1,3}:\d{2}$/.test(inputVal.trim())) {
-        setError('Formato inválido. Usá mm:ss (ej: 12:34)')
+      if (!/^\d{2,3}:\d{2}$/.test(inputVal.trim())) {
+        setError('Completá minutos y segundos con 2 dígitos (ej: 09:45)')
         return
       }
       const secs = parseInt(inputVal.trim().split(':')[1])
@@ -248,9 +272,19 @@ export default function WodLeaderboard({ blockId, resultType, userId, userName, 
     }
   }
 
+  // Máscara mm:ss (o solo números) mientras se tipea
+  const maskInput = (e, prevVal) => {
+    const raw = e.target.value
+    if (resultType !== 'tiempo') return raw.replace(/[^0-9.]/g, '')
+    let digits = raw.replace(/\D/g, '')
+    // Si borraron los dos puntos automáticos, borrar también el dígito anterior
+    if (raw.length < prevVal.length && prevVal.endsWith(':')) digits = digits.slice(0, -1)
+    return maskTime(digits)
+  }
+
   const startAdminEdit = (r) => {
     setAdminEditId(r.user_id)
-    setAdminEditVal(r.result)
+    setAdminEditVal(resultType === 'tiempo' ? toInputTime(r.result) : r.result)
     setAdminEditNotes(r.notes || '')
   }
 
@@ -262,6 +296,16 @@ export default function WodLeaderboard({ blockId, resultType, userId, userName, 
 
   const handleAdminSave = async (resultUserId) => {
     if (!adminEditVal.trim()) return
+    if (resultType === 'tiempo') {
+      if (!/^\d{2,3}:\d{2}$/.test(adminEditVal.trim())) {
+        alert('Completá minutos y segundos con 2 dígitos (ej: 09:45)')
+        return
+      }
+      if (parseInt(adminEditVal.trim().split(':')[1]) > 59) {
+        alert('Los segundos deben estar entre 00 y 59')
+        return
+      }
+    }
     setAdminSaving(true)
     try {
       await updateWodResult(blockId, resultUserId, adminEditVal, adminEditNotes)
@@ -274,7 +318,7 @@ export default function WodLeaderboard({ blockId, resultType, userId, userName, 
     }
   }
 
-  const ph = resultType === 'tiempo' ? 'Ej: 12:34' : resultType === 'kg' ? 'Ej: 80' : 'Ej: 150'
+  const ph = resultType === 'tiempo' ? 'Ej: 09:45' : resultType === 'kg' ? 'Ej: 80' : 'Ej: 150'
   const typeLabel = resultType === 'tiempo' ? '⏱ FOR TIME' : resultType === 'kg' ? '⚖️ MAX KG' : '💪 MAX REPS'
 
   const inputStyle = {
@@ -309,7 +353,7 @@ export default function WodLeaderboard({ blockId, resultType, userId, userName, 
                 {myNotes && <p style={{ fontSize: 12, color: '#5A7286', marginTop: 4, fontStyle: 'italic', lineHeight: 1.5 }}>{myNotes}</p>}
               </div>
               <button
-                onClick={() => { setEditMode(true); setNotesVal(myNotes) }}
+                onClick={() => { setEditMode(true); setInputVal(resultType === 'tiempo' ? toInputTime(myResult) : myResult); setNotesVal(myNotes) }}
                 style={{ background: 'none', border: '1px solid #AEB9C0', borderRadius: 6, color: '#7A8FA0', cursor: 'pointer', fontSize: 11, padding: '5px 10px', flexShrink: 0 }}>
                 Editar
               </button>
@@ -322,20 +366,9 @@ export default function WodLeaderboard({ blockId, resultType, userId, userName, 
               <div style={{ display: 'flex', gap: 8 }}>
                 <input
                   value={inputVal}
-                  onChange={e => {
-                    let v = e.target.value
-                    if (resultType === 'tiempo') {
-                      // Solo dígitos y dos puntos, formato mm:ss
-                      v = v.replace(/[^0-9:]/g, '')
-                      const parts = v.split(':')
-                      if (parts.length > 2) v = parts[0] + ':' + parts.slice(1).join('')
-                    } else if (resultType === 'kg' || resultType === 'reps') {
-                      // Solo números y punto decimal
-                      v = v.replace(/[^0-9.]/g, '')
-                    }
-                    setInputVal(v)
-                  }}
+                  onChange={e => setInputVal(maskInput(e, inputVal))}
                   inputMode={resultType === 'tiempo' ? 'numeric' : 'decimal'}
+                  maxLength={resultType === 'tiempo' ? 6 : undefined}
                   onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                   placeholder={ph}
                   style={{ ...inputStyle, flex: 1 }}
@@ -348,7 +381,7 @@ export default function WodLeaderboard({ blockId, resultType, userId, userName, 
                 </button>
                 {editMode && (
                   <button
-                    onClick={() => { setEditMode(false); setInputVal(myResult); setNotesVal(myNotes) }}
+                    onClick={() => { setEditMode(false); setInputVal(resultType === 'tiempo' ? toInputTime(myResult) : myResult); setNotesVal(myNotes) }}
                     style={{ padding: '9px 12px', background: 'none', border: '1px solid #AEB9C0', borderRadius: 7, color: '#7A8FA0', cursor: 'pointer', fontSize: 13 }}>
                     ✕
                   </button>
@@ -403,17 +436,9 @@ export default function WodLeaderboard({ blockId, resultType, userId, userName, 
                   <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                     <input
                       value={adminEditVal}
-                      onChange={e => {
-                        let v = e.target.value
-                        if (resultType === 'tiempo') {
-                          v = v.replace(/[^0-9:]/g, '')
-                          const parts = v.split(':')
-                          if (parts.length > 2) v = parts[0] + ':' + parts.slice(1).join('')
-                        } else {
-                          v = v.replace(/[^0-9.]/g, '')
-                        }
-                        setAdminEditVal(v)
-                      }}
+                      onChange={e => setAdminEditVal(maskInput(e, adminEditVal))}
+                      inputMode={resultType === 'tiempo' ? 'numeric' : 'decimal'}
+                      maxLength={resultType === 'tiempo' ? 6 : undefined}
                       style={{ flex: 1, background: '#EEF2F0', border: '1px solid #AEB9C0', borderRadius: 6, color: '#1F3A4A', padding: '7px 10px', fontSize: 13, outline: 'none' }}
                     />
                     <button onClick={() => handleAdminSave(r.user_id)} disabled={adminSaving}
