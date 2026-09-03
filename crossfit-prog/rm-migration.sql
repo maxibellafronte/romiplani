@@ -54,7 +54,39 @@ create policy "pr_delete_own" on public.personal_records
   using (user_id = auth.uid());
 
 
+-- ── Marca anterior (para el "+5" del panel de coach) ────────
+-- Guarda cuánto pesaba el RM antes de que el atleta lo pisara, para poder
+-- mostrar cuántos kilos mejoró. Lo escribe un trigger y no el navegador:
+-- así el dato queda aunque el atleta cargue desde otro dispositivo.
+alter table public.personal_records
+  add column if not exists previous_weight_kg numeric(6,2);
+
+create or replace function public.pr_guardar_marca_anterior()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.weight_kg is distinct from old.weight_kg then
+    new.previous_weight_kg := old.weight_kg;
+  else
+    -- Editó la fecha o la nota, no el peso: la marca anterior no cambia.
+    new.previous_weight_kg := old.previous_weight_kg;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists pr_marca_anterior on public.personal_records;
+create trigger pr_marca_anterior
+  before update on public.personal_records
+  for each row execute function public.pr_guardar_marca_anterior();
+
+
 -- ── Verificación ────────────────────────────────────────────
 -- Tiene que devolver las 4 políticas de arriba.
 -- select policyname, cmd from pg_policies
 -- where schemaname = 'public' and tablename = 'personal_records';
+--
+-- Y la columna nueva:
+-- select column_name from information_schema.columns
+-- where table_schema = 'public' and table_name = 'personal_records';

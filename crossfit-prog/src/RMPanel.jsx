@@ -1,45 +1,8 @@
 import { useState, useEffect } from 'react'
 import { getMisRM, guardarRM, borrarRM } from './supabase'
+import { MOVIMIENTOS, CATALOGO, ETIQUETAS, fmtKg } from './movimientos'
 
 const ACCENT = '#31708E'
-
-// Catálogo de movimientos. Para agregar uno nuevo alcanza con sumar una
-// línea acá: el `id` es lo que queda guardado en la base (no cambiarlo
-// una vez que hay atletas con datos cargados), el `label` es lo que se ve.
-export const MOVIMIENTOS = [
-  { grupo: 'Levantamientos olímpicos', items: [
-    { id: 'snatch',          label: 'Snatch' },
-    { id: 'power_snatch',    label: 'Power Snatch' },
-    { id: 'hang_snatch',     label: 'Hang Snatch' },
-    { id: 'clean',           label: 'Clean' },
-    { id: 'power_clean',     label: 'Power Clean' },
-    { id: 'hang_clean',      label: 'Hang Clean' },
-    { id: 'squat_clean',     label: 'Squat Clean' },
-    { id: 'clean_and_jerk',  label: 'Clean & Jerk' },
-    { id: 'split_jerk',      label: 'Split Jerk' },
-    { id: 'push_jerk',       label: 'Push Jerk' },
-  ]},
-  { grupo: 'Sentadillas', items: [
-    { id: 'back_squat',      label: 'Back Squat' },
-    { id: 'front_squat',     label: 'Front Squat' },
-    { id: 'overhead_squat',  label: 'Overhead Squat' },
-  ]},
-  { grupo: 'Tirones', items: [
-    { id: 'deadlift',        label: 'Deadlift' },
-    { id: 'sumo_deadlift',   label: 'Sumo Deadlift' },
-    { id: 'bent_over_row',   label: 'Bent Over Row' },
-    { id: 'weighted_pullup', label: 'Weighted Pull-up' },
-  ]},
-  { grupo: 'Empujes', items: [
-    { id: 'strict_press',    label: 'Strict Press' },
-    { id: 'push_press',      label: 'Push Press' },
-    { id: 'bench_press',     label: 'Bench Press' },
-    { id: 'thruster',        label: 'Thruster' },
-  ]},
-]
-
-const CATALOGO = MOVIMIENTOS.flatMap(g => g.items)
-const ETIQUETAS = Object.fromEntries(CATALOGO.map(m => [m.id, m.label]))
 
 function hoyISO() {
   const d = new Date()
@@ -50,12 +13,6 @@ function fmtFecha(iso) {
   const s = String(iso ?? '').slice(0, 10)
   const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/)
   return m ? `${m[3]}/${m[2]}/${m[1].slice(2)}` : ''
-}
-
-// 100.00 → "100" ; 62.50 → "62.5"
-function fmtKg(v) {
-  const n = Number(v)
-  return isFinite(n) ? String(Math.round(n * 100) / 100) : String(v ?? '')
 }
 
 const inputStyle = {

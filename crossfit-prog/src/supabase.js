@@ -234,6 +234,16 @@ export async function guardarRM({ userId, userName, movement, weightKg, achieved
   return data[0]
 }
 
+// Vista de coach: los RM de todos los atletas. Quien no sea admin recibe
+// solo los suyos — el filtro lo aplica RLS en la base, no esta consulta.
+export async function getRMDeAtletas() {
+  const { data, error } = await supabase
+    .from('personal_records')
+    .select('user_id, user_name, movement, weight_kg, previous_weight_kg')
+  if (error) throw error
+  return data || []
+}
+
 export async function borrarRM(userId, movement) {
   const { error } = await supabase
     .from('personal_records')
