@@ -202,6 +202,47 @@ export async function getLoginLogs(days = 30) {
   return apiAdmin('/api/admin/activity', { params: { days } })
 }
 
+// ── RM / Récords personales ───────────────────────────────
+// Una fila por atleta y movimiento, con su peso máximo. RLS deja que cada
+// uno lea y escriba solo las suyas (la coach las ve todas), así que va
+// directo contra la tabla: no hace falta pasar por /api/admin.
+export async function getMisRM(userId) {
+  const { data, error } = await supabase
+    .from('personal_records')
+    .select('*')
+    .eq('user_id', userId)
+  if (error) throw error
+  return data || []
+}
+
+export async function guardarRM({ userId, userName, movement, weightKg, achievedOn, notes }) {
+  const { data, error } = await supabase
+    .from('personal_records')
+    .upsert({
+      user_id: userId,
+      user_name: userName,
+      movement,
+      weight_kg: weightKg,
+      achieved_on: achievedOn,
+      notes: notes?.trim() || null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,movement' })
+    .select()
+  if (error) throw error
+  // Sin fila devuelta el guardado fue rechazado por RLS, aunque no haya error.
+  if (!data?.[0]) throw new Error('El servidor rechazó el guardado. Revisá los permisos de la tabla.')
+  return data[0]
+}
+
+export async function borrarRM(userId, movement) {
+  const { error } = await supabase
+    .from('personal_records')
+    .delete()
+    .eq('user_id', userId)
+    .eq('movement', movement)
+  if (error) throw error
+}
+
 // ── Resultados de WOD de otros atletas ────────────────────
 export async function updateWodResult(blockId, userId, result, notes) {
   return apiAdmin('/api/admin/wod-results', {

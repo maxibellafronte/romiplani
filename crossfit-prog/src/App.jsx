@@ -6,6 +6,7 @@ import AthletesPanel from './AthletesPanel'
 import ActivityPanel from './ActivityPanel'
 import CambiarPassword from './CambiarPassword'
 import WodLeaderboard from './WodLeaderboard'
+import RMPanel from './RMPanel'
 
 const ACCENT = '#31708E'
 
@@ -484,6 +485,13 @@ export default function App() {
               <button onClick={()=>setAdminTab('activity')} style={{padding:'4px 12px',fontSize:11,fontWeight:600,cursor:'pointer',borderRadius:6,background:adminTab==='activity'?'#31708E22':'none',border:`1px solid ${adminTab==='activity'?'#31708E':'#C4CDD4'}`,color:adminTab==='activity'?'#31708E':'#AEB9C0'}}>📊 Actividad</button>
             </>
           )}
+          <button onClick={()=>setAdminTab(t => t==='rm' ? 'programming' : 'rm')} title="Mis récords personales"
+            style={{padding:'4px 12px',fontSize:11,fontWeight:600,cursor:'pointer',borderRadius:6,
+              background:adminTab==='rm'?'#31708E22':'none',
+              border:`1px solid ${adminTab==='rm'?'#31708E':'#C4CDD4'}`,
+              color:adminTab==='rm'?'#31708E':'#AEB9C0'}}>
+            🏋️ RM
+          </button>
           <button onClick={()=>setCambiandoPass(true)} title="Cambiar mi contraseña"
             style={{padding:'4px 10px',fontSize:11,cursor:'pointer',borderRadius:6,background:'none',border:'1px solid #C4CDD4',color:'#AEB9C0'}}>
             🔑{!isAdmin && ' Contraseña'}
@@ -491,8 +499,10 @@ export default function App() {
         </div>
       </div>
 
-      {/* Tabs de admin */}
-      {isAdmin && adminTab === 'athletes' ? (
+      {/* Tabs */}
+      {adminTab === 'rm' ? (
+        <div style={{flex:1,overflowY:'auto'}}><RMPanel userId={userId} userName={userName} /></div>
+      ) : isAdmin && adminTab === 'athletes' ? (
         <div style={{flex:1,overflowY:'auto'}}><AthletesPanel /></div>
       ) : isAdmin && adminTab === 'activity' ? (
         <div style={{flex:1,overflowY:'auto'}}><ActivityPanel /></div>
