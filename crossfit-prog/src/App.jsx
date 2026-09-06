@@ -184,7 +184,7 @@ function BlockPill({ block, isAdmin, isMobile, userId, userName, onEdit, onDel }
             <>
               <button onClick={e=>{e.stopPropagation();onEdit(block)}}
                 style={{background:'none',border:'none',color:'#5A7286',cursor:'pointer',fontSize:12,padding:'2px 5px'}}>✏</button>
-              <button onClick={e=>{e.stopPropagation();onDel(block.id)}}
+              <button onClick={e=>{e.stopPropagation();confirm('¿Eliminar este bloque?') && onDel(block.id)}}
                 style={{background:'none',border:'none',color:'#8A98A2',cursor:'pointer',fontSize:15,padding:'2px 5px'}}>×</button>
             </>
           )}
