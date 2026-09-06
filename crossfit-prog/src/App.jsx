@@ -80,6 +80,14 @@ function BlockModal({ block, onSave, onClose }) {
 
   const isWodType = ['wod','metcon'].includes(type)
 
+  // "Lo escrito" es título/contenido: son los campos que cuesta rehacer.
+  // El tipo o el leaderboard se recambian con un click, no ameritan alerta.
+  const hasUnsaved = title !== (block?.title || '') || content !== (block?.content || '')
+  const requestClose = () => {
+    if (hasUnsaved && !confirm('Hay cambios sin guardar. ¿Salir sin guardar?')) return
+    onClose()
+  }
+
   const rtBtnStyle = (rt) => ({
     flex:1, padding:'7px 0', fontSize:11, fontWeight:700, cursor:'pointer', borderRadius:6,
     background: resultType===rt ? (rt==='tiempo'?'#31708E15':rt==='kg'?'#B5761E15':'#5085A515') : 'none',
@@ -88,11 +96,11 @@ function BlockModal({ block, onSave, onClose }) {
   })
 
   return (
-    <div style={S.overlay} onClick={e => e.target===e.currentTarget && onClose()}>
+    <div style={S.overlay} onClick={e => e.target===e.currentTarget && requestClose()}>
       <div style={S.modal}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}>
           <span style={{fontWeight:700,fontSize:14,color:'#1F3A4A'}}>{block?.id ? 'Editar bloque' : 'Nuevo bloque'}</span>
-          <button onClick={onClose} style={{background:'none',border:'none',color:'#7A8FA0',fontSize:22,cursor:'pointer'}}>×</button>
+          <button onClick={requestClose} style={{background:'none',border:'none',color:'#7A8FA0',fontSize:22,cursor:'pointer'}}>×</button>
         </div>
 
         <span style={S.label}>Tipo de bloque</span>
@@ -151,7 +159,7 @@ function BlockModal({ block, onSave, onClose }) {
         )}
 
         <div style={{display:'flex',gap:8,marginTop:20,justifyContent:'flex-end'}}>
-          <button onClick={onClose} style={S.btnGhost}>Cancelar</button>
+          <button onClick={requestClose} style={S.btnGhost}>Cancelar</button>
           <button onClick={()=>onSave({id:block?.id||uid(), type, title, content, leaderboard: isWodType ? leaderboard : false, resultType})} style={S.btnPink}>
             {block?.id ? 'Guardar cambios' : 'Añadir bloque'}
           </button>
