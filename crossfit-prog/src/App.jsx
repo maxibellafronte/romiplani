@@ -488,8 +488,8 @@ export default function App() {
               </div>
               <div style={{display:'flex',gap:6,alignItems:'center'}}>
                 {isCoach && (editMode
-                  ? <button onClick={()=>setEditMode(false)} style={{background:ACCENT,border:'none',borderRadius:8,color:'white',cursor:'pointer',fontSize:10,padding:'7px 13px',fontWeight:800}}>● EDITANDO</button>
-                  : <button onClick={()=>setEditMode(true)} style={{background:'none',border:'1px solid #AEB9C0',borderRadius:8,color:'#7A8FA0',cursor:'pointer',fontSize:10,padding:'7px 13px'}}>EDITAR</button>
+                  ? <button onClick={()=>setEditMode(false)} style={{background:ACCENT,border:'none',borderRadius:8,color:'white',cursor:'pointer',fontSize:10,padding:'7px 13px',fontWeight:800}}>● PLANIFICANDO</button>
+                  : <button onClick={()=>setEditMode(true)} style={{background:'none',border:'1px solid #AEB9C0',borderRadius:8,color:'#7A8FA0',cursor:'pointer',fontSize:10,padding:'7px 13px'}}>PLANIFICAR</button>
                 )}
                 <button onClick={signOut} style={{background:'none',border:'1px solid #C4CDD4',borderRadius:8,color:'#AEB9C0',cursor:'pointer',fontSize:16,padding:'5px 10px'}}>↩</button>
               </div>
@@ -521,8 +521,8 @@ export default function App() {
             <div style={{display:'flex',alignItems:'center',gap:8}}>
               {saving && <span style={{fontSize:9,color:'#AEB9C0'}}>GUARDANDO...</span>}
               {isCoach && (editMode
-                ? <button onClick={()=>setEditMode(false)} style={{background:ACCENT,border:'none',borderRadius:6,color:'white',cursor:'pointer',fontSize:10,padding:'6px 12px',fontWeight:800}}>● EDITANDO</button>
-                : <button onClick={()=>setEditMode(true)} style={{background:'none',border:'1px solid #C4CDD4',borderRadius:6,color:'#AEB9C0',cursor:'pointer',fontSize:10,padding:'6px 12px'}}>EDITAR</button>
+                ? <button onClick={()=>setEditMode(false)} style={{background:ACCENT,border:'none',borderRadius:6,color:'white',cursor:'pointer',fontSize:10,padding:'6px 12px',fontWeight:800}}>● PLANIFICANDO</button>
+                : <button onClick={()=>setEditMode(true)} style={{background:'none',border:'1px solid #C4CDD4',borderRadius:6,color:'#AEB9C0',cursor:'pointer',fontSize:10,padding:'6px 12px'}}>PLANIFICAR</button>
               )}
               <button onClick={signOut} title="Cerrar sesión" style={{background:'none',border:'1px solid #C4CDD4',borderRadius:6,color:'#AEB9C0',cursor:'pointer',fontSize:10,padding:'6px 10px'}}>↩</button>
             </div>
