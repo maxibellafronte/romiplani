@@ -162,16 +162,26 @@ function BlockModal({ block, onSave, onClose }) {
 }
 
 // ── Block Pill ────────────────────────────────────────────
-function BlockPill({ block, isAdmin, isMobile, userId, userName, onEdit, onDel }) {
+function BlockPill({ block, isAdmin, isMobile, userId, userName, onEdit, onDel, dragging, onGripDown, onGripMove, onGripUp }) {
   const [open, setOpen] = useState(false)
   const t = BTYPES[block.type] || BTYPES.wod
   const hasLeaderboard = block.leaderboard && ['wod','metcon'].includes(block.type)
 
   return (
-    <div style={{background:t.bg+'18', border:`1px solid ${t.bg}44`, borderRadius:8, marginBottom:8, overflow:'hidden'}}>
+    <div style={{background:t.bg+'18', border:`1px solid ${t.bg}44`, borderRadius:8, marginBottom:8, overflow:'hidden', opacity:dragging?0.5:1}}>
       <div onClick={()=>setOpen(o=>!o)}
         style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:isMobile?'10px 12px':'8px 10px',cursor:'pointer',gap:8}}>
         <div style={{display:'flex',alignItems:'center',gap:8,minWidth:0}}>
+          {isAdmin && (
+            <span
+              onPointerDown={onGripDown}
+              onPointerMove={onGripMove}
+              onPointerUp={onGripUp}
+              onClick={e=>e.stopPropagation()}
+              title="Arrastrar para reordenar"
+              style={{cursor:dragging?'grabbing':'grab', touchAction:'none', userSelect:'none', color:'#8A98A2', fontSize:14, flexShrink:0, lineHeight:1}}
+            >⣿</span>
+          )}
           <div style={{width:3,height:16,borderRadius:2,background:t.bg,flexShrink:0}} />
           <span style={{fontSize:10,fontWeight:800,textTransform:'uppercase',letterSpacing:'0.1em',color:t.accent}}>{t.label}</span>
           {hasLeaderboard && <span style={{fontSize:9,background:ACCENT+'30',color:ACCENT,padding:'1px 6px',borderRadius:8,fontWeight:700,letterSpacing:'0.06em'}}>🏆</span>}
@@ -213,6 +223,41 @@ function BlockPill({ block, isAdmin, isMobile, userId, userName, onEdit, onDel }
 // ── Day Card ──────────────────────────────────────────────
 function DayCard({ dayKey, label, date, dateObj, data, isAdmin, isToday, isMobile, defaultOpen, userId, userName, onUpdate, onAdd, onEdit, onDel }) {
   const [open, setOpen] = useState(defaultOpen)
+  const [dragIdx, setDragIdx] = useState(null)
+  const blockRefs = useRef([])
+  const dragData = useRef(null)
+
+  const startDrag = (idx) => (e) => {
+    e.stopPropagation()
+    e.currentTarget.setPointerCapture(e.pointerId)
+    dragData.current = { idx, blocks: [...(data.blocks || [])] }
+    setDragIdx(idx)
+  }
+  const moveDrag = (e) => {
+    if (!dragData.current) return
+    const { idx, blocks } = dragData.current
+    const y = e.clientY
+    let newIdx = blocks.length - 1
+    for (let i = 0; i < blockRefs.current.length; i++) {
+      const el = blockRefs.current[i]
+      if (!el) continue
+      const r = el.getBoundingClientRect()
+      if (y < r.top + r.height / 2) { newIdx = i; break }
+    }
+    if (newIdx !== idx) {
+      const nb = [...blocks]
+      const [moved] = nb.splice(idx, 1)
+      nb.splice(newIdx, 0, moved)
+      dragData.current = { idx: newIdx, blocks: nb }
+      setDragIdx(newIdx)
+      onUpdate({ ...data, blocks: nb })
+    }
+  }
+  const endDrag = () => {
+    dragData.current = null
+    setDragIdx(null)
+  }
+
   return (
     <div style={{
       background:isToday?'#EEF2F0':'#EEF2F0',
@@ -257,10 +302,14 @@ function DayCard({ dayKey, label, date, dateObj, data, isAdmin, isToday, isMobil
             <div style={{textAlign:'center',color:'#AEB9C0',fontSize:11,padding:'16px 0',letterSpacing:'0.15em',fontWeight:600}}>— DESCANSO —</div>
           ) : (
             <>
-              {(data.blocks||[]).map(b => (
-                <BlockPill key={b.id} block={b} isAdmin={isAdmin} isMobile={isMobile}
-                  userId={userId} userName={userName}
-                  onEdit={onEdit} onDel={onDel} />
+              {(data.blocks||[]).map((b, idx) => (
+                <div key={b.id} ref={el=>blockRefs.current[idx]=el}>
+                  <BlockPill block={b} isAdmin={isAdmin} isMobile={isMobile}
+                    userId={userId} userName={userName}
+                    onEdit={onEdit} onDel={onDel}
+                    dragging={dragIdx===idx}
+                    onGripDown={startDrag(idx)} onGripMove={moveDrag} onGripUp={endDrag} />
+                </div>
               ))}
               {isAdmin && (
                 <button onClick={e=>{e.stopPropagation();onAdd()}}
