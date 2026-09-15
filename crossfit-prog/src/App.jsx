@@ -8,6 +8,7 @@ import CambiarPassword from './CambiarPassword'
 import WodLeaderboard from './WodLeaderboard'
 import RMPanel from './RMPanel'
 import RMAtletasPanel from './RMAtletasPanel'
+import RPEPanel from './RPEPanel'
 
 const ACCENT = '#31708E'
 
@@ -551,6 +552,14 @@ export default function App() {
               color:adminTab==='rm'?'#31708E':'#AEB9C0'}}>
             🏋️ RM{isCoach && ' Atletas'}
           </button>
+          <button onClick={()=>setAdminTab(t => t==='rpe' ? 'programming' : 'rpe')}
+            title="Escalas de RPE"
+            style={{padding:'4px 12px',fontSize:11,fontWeight:600,cursor:'pointer',borderRadius:6,
+              background:adminTab==='rpe'?'#31708E22':'none',
+              border:`1px solid ${adminTab==='rpe'?'#31708E':'#C4CDD4'}`,
+              color:adminTab==='rpe'?'#31708E':'#AEB9C0'}}>
+            💪 RPE
+          </button>
           <button onClick={()=>setCambiandoPass(true)} title="Cambiar mi contraseña"
             style={{padding:'4px 10px',fontSize:11,cursor:'pointer',borderRadius:6,background:'none',border:'1px solid #C4CDD4',color:'#AEB9C0'}}>
             🔑{!isAdmin && ' Contraseña'}
@@ -564,6 +573,8 @@ export default function App() {
           {/* La coach ve los RM de todos; el atleta carga y ve los suyos. */}
           {isCoach ? <RMAtletasPanel /> : <RMPanel userId={userId} userName={userName} />}
         </div>
+      ) : adminTab === 'rpe' ? (
+        <div style={{flex:1,overflowY:'auto'}}><RPEPanel /></div>
       ) : isAdmin && adminTab === 'athletes' ? (
         <div style={{flex:1,overflowY:'auto'}}><AthletesPanel /></div>
       ) : isAdmin && adminTab === 'activity' ? (
